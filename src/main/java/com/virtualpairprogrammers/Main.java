@@ -28,18 +28,10 @@ public class Main {
         SparkConf conf = new SparkConf().setAppName("startingSpark").setMaster("local[*]");
         JavaSparkContext sc = new JavaSparkContext(conf);
 
-        JavaRDD<String> originalMessages = sc.parallelize(logData);
-
-        JavaPairRDD<String, Long> pairRdd = originalMessages.mapToPair( rawString -> {
-            String[] columns = rawString.split(":");
-            String level = columns[0];
-            String date = columns[1];
-
-            return new Tuple2<>(level, 1L);
-        });
-
-        JavaPairRDD<String, Long> sumsRdd = pairRdd.reduceByKey( (value1, value2) -> value1 + value2 );
-        sumsRdd.foreach( tuple -> System.out.println(tuple._1 + " has " + tuple._2 + " instances"));
+        sc.parallelize(logData)
+            .mapToPair(rawString -> new Tuple2<>(rawString.split(":")[0], 1L))
+            .reduceByKey((val1, val2) -> val1 + val2)
+            .foreach(tuple -> System.out.println(tuple._1 + " has " + tuple._2 + " instances"));
 
 
 //        ===========================================================================================

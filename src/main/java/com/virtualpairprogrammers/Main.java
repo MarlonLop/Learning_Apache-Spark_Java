@@ -30,15 +30,22 @@ public class Main {
         SparkConf conf = new SparkConf().setAppName("startingSpark").setMaster("local[*]");
         JavaSparkContext sc = new JavaSparkContext(conf);
 
-        JavaRDD<String> sentences = sc.parallelize(logData);
+//        JavaRDD<String> sentences = sc.parallelize(logData);
 
-        JavaRDD<String> words = sentences.flatMap(value -> Arrays.asList(value.split(" ")).iterator());
+//        JavaRDD<String> words = sentences.flatMap(value -> Arrays.asList(value.split(" ")).iterator());
+//
+//        JavaRDD<String> filteredWords = words.filter(word -> word.length() > 1);
+//        JavaRDD<String> filteredWordsOnly = words.filter(word -> !(word.chars().allMatch(Character::isDigit)));
+//
+//        filteredWords.collect().forEach(System.out::println);
+//        filteredWordsOnly.collect().forEach(System.out::println);
 
-        JavaRDD<String> filteredWords = words.filter(word -> word.length() > 1);
-        JavaRDD<String> filteredWordsOnly = words.filter(word -> !(word.chars().allMatch(Character::isDigit)));
+        // More concise code
 
-        filteredWords.collect().forEach(System.out::println);
-        filteredWordsOnly.collect().forEach(System.out::println);
+        sc.parallelize(logData)
+                .flatMap(val -> Arrays.asList(val.split(" ")).iterator())
+                .filter(word -> word.length() > 1)
+                .collect().forEach(System.out::println);
 
 
 

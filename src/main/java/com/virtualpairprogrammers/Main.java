@@ -11,6 +11,7 @@ import org.apache.spark.sql.sources.In;
 import scala.Tuple2;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class Main {
@@ -29,10 +30,20 @@ public class Main {
         SparkConf conf = new SparkConf().setAppName("startingSpark").setMaster("local[*]");
         JavaSparkContext sc = new JavaSparkContext(conf);
 
-        sc.parallelize(logData)
-            .mapToPair(rawString -> new Tuple2<>(rawString.split(":")[0], 1L))
-            .reduceByKey((val1, val2) -> val1 + val2)
-            .foreach(tuple -> System.out.println(tuple._1 + " has " + tuple._2 + " instances"));
+        JavaRDD<String> sentences = sc.parallelize(logData);
+
+        JavaRDD<String> words = sentences.flatMap(value -> Arrays.asList(value.split(" ")).iterator());
+
+        words.collect().forEach(System.out::println);
+
+
+//        ==============================================================================================
+//        mapToPair, reduceByKey, groupByKey (Avoid this one)
+
+//        sc.parallelize(logData)
+//            .mapToPair(rawString -> new Tuple2<>(rawString.split(":")[0], 1L))
+//            .reduceByKey((val1, val2) -> val1 + val2)
+//            .foreach(tuple -> System.out.println(tuple._1 + " has " + tuple._2 + " instances"));
 
 
 
@@ -47,6 +58,7 @@ public class Main {
 
 
 //        ===========================================================================================
+//        Tuples
 
 //        List<Integer> inputData = new ArrayList<>();
 //        inputData.add(35);

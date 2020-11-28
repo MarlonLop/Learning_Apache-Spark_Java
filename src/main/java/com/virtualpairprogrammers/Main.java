@@ -1,5 +1,6 @@
 package com.virtualpairprogrammers;
 
+import com.google.common.collect.Iterables;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
@@ -32,6 +33,17 @@ public class Main {
             .mapToPair(rawString -> new Tuple2<>(rawString.split(":")[0], 1L))
             .reduceByKey((val1, val2) -> val1 + val2)
             .foreach(tuple -> System.out.println(tuple._1 + " has " + tuple._2 + " instances"));
+
+
+
+        /*  GroupByKey  -- AVOID  because of issues with large datasets.
+            It uses google java library Guava for Iterables.size, this allows to obtain
+            an element count for an iterable collection
+         */
+//        sc.parallelize(logData)
+//                .mapToPair(rawString -> new Tuple2<>(rawString.split(":")[0], 1L))
+//                .groupByKey()
+//                .foreach(tuple -> System.out.println(tuple._1 + " has " + Iterables.size(tuple._2) + " instances"));
 
 
 //        ===========================================================================================

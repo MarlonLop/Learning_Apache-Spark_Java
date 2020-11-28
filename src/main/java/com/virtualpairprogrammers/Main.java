@@ -34,7 +34,12 @@ public class Main {
 
         JavaRDD<String> words = sentences.flatMap(value -> Arrays.asList(value.split(" ")).iterator());
 
-        words.collect().forEach(System.out::println);
+        JavaRDD<String> filteredWords = words.filter(word -> word.length() > 1);
+        JavaRDD<String> filteredWordsOnly = words.filter(word -> !(word.chars().allMatch(Character::isDigit)));
+
+        filteredWords.collect().forEach(System.out::println);
+        filteredWordsOnly.collect().forEach(System.out::println);
+
 
 
 //        ==============================================================================================

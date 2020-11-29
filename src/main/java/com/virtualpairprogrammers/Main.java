@@ -8,6 +8,7 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.sources.In;
+import org.codehaus.janino.Java;
 import scala.Tuple2;
 
 import java.util.ArrayList;
@@ -29,10 +30,28 @@ public class Main {
          */
         JavaRDD<String> initRdd = sc.textFile("src/main/resources/subtitles/input.txt");
 
-        initRdd
-           .flatMap(val -> Arrays.asList(val.split(" ")).iterator())
-           .collect().forEach(System.out::println);
+        JavaRDD<String> lettersOnlyRdd = initRdd.map(sentence -> sentence
+                                        .replaceAll("[^a-zA-Z\\s]", "").toLowerCase());
 
+        JavaRDD<String> trimBlankLines = lettersOnlyRdd.filter( sentence -> sentence.trim().length() > 0 );
+
+        JavaRDD<String> wordsOnly = trimBlankLines.flatMap(sentence -> Arrays.asList(
+                                                                        sentence.split(" ")).iterator());
+
+        JavaRDD<String> blankWordsRemoved = wordsOnly.filter(word -> word.trim().length() > 0);
+
+        JavaRDD<String> interestingWordsOnly = blankWordsRemoved.filter(word -> Util.isNotBoring(word));
+
+        JavaPairRDD<String, Long> pairRdd = interestingWordsOnly.mapToPair(word -> new Tuple2<>(word, 1L));
+
+        JavaPairRDD<String, Long> totals = pairRdd.reduceByKey((val1, val2) -> val1 + val2);
+
+        JavaPairRDD<Long, String> swapKeyValue = totals.mapToPair(tuple -> new Tuple2<>(tuple._2, tuple._1));
+
+        JavaPairRDD<Long, String> sortedByWordCount = swapKeyValue.sortByKey(false);
+
+        List<Tuple2<Long, String >> result = sortedByWordCount.take(20);
+        result.forEach(System.out::println);
 
 
 //        =========================================================================

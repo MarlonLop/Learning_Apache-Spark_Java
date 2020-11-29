@@ -17,18 +17,26 @@ import java.util.List;
 public class Main {
 
     public static void main(String[] args) {
-
-        List<String> logData = new ArrayList<>();
-        logData.add("WARN: Tuesday 4 September 0405");
-        logData.add("ERROR: Tuesday 4 September 0408");
-        logData.add("FATAL: Wednesday 5 September 1632");
-        logData.add("ERROR: Friday 7 September 1854");
-        logData.add("WARN: Saturday 8 September 1942");
-
         Logger.getLogger("org.apache").setLevel(Level.WARN);
 
         SparkConf conf = new SparkConf().setAppName("startingSpark").setMaster("local[*]");
         JavaSparkContext sc = new JavaSparkContext(conf);
+
+        /*
+        getting data from a text file.
+        normally in production env the textFile("path") will take a path to a file in a distributed file system,
+        like AWS S3 or HDFS (Hadoop)
+         */
+        JavaRDD<String> initRdd = sc.textFile("src/main/resources/subtitles/input.txt");
+
+        initRdd
+           .flatMap(val -> Arrays.asList(val.split(" ")).iterator())
+           .collect().forEach(System.out::println);
+
+
+
+//        =========================================================================
+        // Filter
 
 //        JavaRDD<String> sentences = sc.parallelize(logData);
 
@@ -42,11 +50,12 @@ public class Main {
 
         // More concise code
 
-        sc.parallelize(logData)
-                .flatMap(val -> Arrays.asList(val.split(" ")).iterator())
-                .filter(word -> word.length() > 1)
-                .collect().forEach(System.out::println);
-
+//        sc.parallelize(logData)
+//                .flatMap(val -> Arrays.asList(val.split(" ")).iterator())
+//                .filter(word -> word.length() > 1)
+//                .collect()
+//                .forEach(System.out::println);
+//
 
 
 //        ==============================================================================================

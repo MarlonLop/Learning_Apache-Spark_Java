@@ -46,11 +46,12 @@ public class Main {
 
         JavaPairRDD<String, Long> totals = pairRdd.reduceByKey((val1, val2) -> val1 + val2);
 
-        JavaPairRDD<Long, String> swapKeyValue = totals.mapToPair(tuple -> new Tuple2<>(tuple._2, tuple._1));
+        JavaPairRDD<Long, String> swapKeyValue = totals.mapToPair( Tuple2::swap ); //more concise key value pari swap
+//        JavaPairRDD<Long, String> swapKeyValue = totals.mapToPair(tuple -> new Tuple2<>(tuple._2, tuple._1));
 
         JavaPairRDD<Long, String> sortedByWordCount = swapKeyValue.sortByKey(false);
 
-        List<Tuple2<Long, String >> result = sortedByWordCount.take(20);
+        List<Tuple2<Long, String >> result = sortedByWordCount.take(10);
         result.forEach(System.out::println);
 
 

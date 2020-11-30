@@ -9,6 +9,7 @@ import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 
+import org.omg.CORBA.INTERNAL;
 import scala.Tuple2;
 
 /**
@@ -33,7 +34,26 @@ public class ViewingFigures
 		JavaPairRDD<Integer, Integer> chapterData = setUpChapterDataRdd(sc, testMode);
 		JavaPairRDD<Integer, String> titlesData = setUpTitlesDataRdd(sc, testMode);
 
-		// TODO - over to you!
+		// solution
+
+		/*
+		step 1
+		remove duplicated views
+		 */
+		JavaPairRDD<Integer, Integer> chapterCount = chapterData.mapToPair(row -> new Tuple2<>(row._2, 1))
+			.reduceByKey( (val1, val2) -> val1 + val2 );
+
+		viewData = viewData.distinct();
+
+		/*
+		step 2
+		get courseId into the RDD
+		 */
+//		viewData = viewData.mapToPair( row -> new Tuple2<>(row._2, row._1));
+		viewData = viewData.mapToPair( Tuple2::swap );
+		JavaPairRDD<Integer, Tuple2<Integer, Integer>> joinedRdd = viewData.join(chapterData);
+
+		joinedRdd.collect().forEach(System.out::println);
 		
 		sc.close();
 	}

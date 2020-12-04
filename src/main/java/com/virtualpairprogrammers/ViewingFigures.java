@@ -7,8 +7,10 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 
+import org.codehaus.janino.Java;
 import org.omg.CORBA.INTERNAL;
 import scala.Tuple2;
 
@@ -28,7 +30,7 @@ public class ViewingFigures
 		JavaSparkContext sc = new JavaSparkContext(conf);
 		
 		// Use true to use hardcoded data identical to that in the PDF guide.
-		boolean testMode = true;
+		boolean testMode = false;
 		
 		JavaPairRDD<Integer, Integer> viewData = setUpViewDataRdd(sc, testMode);
 		JavaPairRDD<Integer, Integer> chapterData = setUpChapterDataRdd(sc, testMode);
@@ -36,27 +38,66 @@ public class ViewingFigures
 
 		// solution
 
-		/*
-		step 1
-		remove duplicated views
-		 */
+//		step 1 - remove duplicated views
+
 		JavaPairRDD<Integer, Integer> chapterCount = chapterData.mapToPair(row -> new Tuple2<>(row._2, 1))
 			.reduceByKey( (val1, val2) -> val1 + val2 );
 
 		viewData = viewData.distinct();
 
-		/*
-		step 2
-		get courseId into the RDD
-		 */
+
+//		step 2 - get courseId into the RDD
+
 //		viewData = viewData.mapToPair( row -> new Tuple2<>(row._2, row._1));
 		viewData = viewData.mapToPair( Tuple2::swap );
 		JavaPairRDD<Integer, Tuple2<Integer, Integer>> joinedRdd = viewData.join(chapterData);
 
-		joinedRdd.collect().forEach(System.out::println);
-		
+//		step 3 - dropping chapterId
+
+		JavaPairRDD<Tuple2<Integer, Integer>, Long> step3 = joinedRdd.mapToPair( row -> {
+			Integer userId = row._2._1;
+			Integer courseId = row._2._2;
+			return new Tuple2<>(new Tuple2<>(userId, courseId), 1L);
+		});
+
+//		step 4 - reduce by key to obtain count of viewed chapters per user
+
+		JavaPairRDD<Tuple2<Integer, Integer>, Long> step4 = step3.reduceByKey((val1, val2) -> val1 + val2);
+
+//		step 5 - remove user ids
+		JavaPairRDD<Integer, Long> step5 = step4.mapToPair(row -> new Tuple2<>(row._1._2, row._2));
+
+//		step 6 - add in total chapter count
+		JavaPairRDD<Integer, Tuple2<Long, Integer>> step6 = step5.join(chapterCount);
+
+//		step 7 - determine watch ration of courses per user
+
+//		JavaRDD<Double> step7 = step6.map(row -> (double) row._2._1 / row._2._2);
+		// we can achieve the same by using mapValues
+		JavaPairRDD<Integer, Double> step7 = step6.mapValues(value -> (double)value._1 / value._2);
+
+//		step 8 - convert to scores
+
+		JavaPairRDD<Integer, Long> step8 = step7.mapValues(val -> {
+			if(val > 0.9) return 10L;
+			if(val > 0.5) return 4L;
+			if(val > 0.25) return 2L;
+			return 0L;
+		});
+
+//		step 9 - reduce by key to obtain total scoreby course
+		JavaPairRDD<Integer, Long> step9 = step8.reduceByKey((val1, val2) -> val1 + val2);
+
+//		step 10
+		JavaPairRDD<Integer, Tuple2<Long, String>> step10 = step9.join(titlesData);
+		JavaPairRDD<Long, String> lastStep = step10.mapToPair(row -> new Tuple2<>(row._2._1, row._2._2));
+		lastStep.sortByKey(false).collect().forEach(System.out::println);
+
+
 		sc.close();
 	}
+
+
 
 	private static JavaPairRDD<Integer, String> setUpTitlesDataRdd(JavaSparkContext sc, boolean testMode) {
 		
